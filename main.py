@@ -29,7 +29,7 @@ class KnucklebonesGame:
         if self.done:
             return
 
-        # place die in first empty slot
+        # place die in first empty slot of chosen column
         col = self.board[player, column]
         row = np.where(col == 0)[0][0]
         col[row] = value
@@ -39,9 +39,11 @@ class KnucklebonesGame:
         opp_col = self.board[opponent, column]
         opp_col[opp_col == value] = 0
 
-        # check if game is over
-        if all(0 not in self.board[p].flatten() for p in [0, 1]):
+        # check if this player filled their board
+        if 0 not in self.board[player].flatten():
             self.done = True
+
+
 
     def score_player(self, player):
         """Calculate total score for a player"""
@@ -65,15 +67,17 @@ class KnucklebonesGame:
         return None
 
     def print_board(self):
-        """Debug print"""
+        """Print the boards cleanly with regular integers"""
         for p in [0, 1]:
             print(f"\nPlayer {p} board:")
             for r in range(2, -1, -1):
-                print([self.board[p, c, r] for c in range(3)])
+                # convert np.int64 to int for clean printing
+                print([int(self.board[p, c, r]) for c in range(3)])
         print(
             f"\nScores -> P0: {self.score_player(0)} | "
             f"P1: {self.score_player(1)}"
         )
+
 
 
 # =========================
@@ -126,15 +130,35 @@ def random_agent(game):
 
 if __name__ == "__main__":
     game = KnucklebonesGame()
+    turn = 1
 
     while not game.done:
+        print("\n" + "=" * 30)
+        print(f"TURN {turn}")
+        print(f"Current Player: {game.current_player}")
+
+        valid = game.valid_moves(game.current_player)
+
+        if not valid:
+            print("No valid moves. Skipping turn.")
+            game.current_player = 1 - game.current_player
+            turn += 1
+            continue
+
         rolled = game.roll_die()
-        player = game.current_player
+        print(f"Rolled Die: {rolled}")
 
         move = random_agent(game)
-        game.apply_move(player, move, rolled)
+        print(f"Chosen Column: {move}")
+
+        game.apply_move(game.current_player, move, rolled)
+
+        game.print_board()
 
         game.current_player = 1 - game.current_player
+        turn += 1
 
+    print("\n" + "=" * 30)
+    print("GAME OVER")
     game.print_board()
-    print("\nWinner:", game.get_winner())
+    print("Winner:", game.get_winner())
